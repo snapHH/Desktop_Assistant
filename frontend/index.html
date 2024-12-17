@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100" xmlns:x-transition="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desktop Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600" x-data="desktopAssistant()">
+    <div id="app" class="bg-white rounded-lg shadow-2xl p-8 w-96 transform transition-all duration-500 ease-in-out hover:scale-105">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800 float-animation">Desktop Assistant</h1>
+        <form id="task-form" @submit.prevent="performTask" class="space-y-4">
+            <div>
+                <label for="task-type" class="block text-sm font-medium text-gray-700 mb-1">Select Task:</label>
+                <select id="task-type" x-model="taskType" required class="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    <option value="search_web">Search the Web</option>
+                    <option value="open_application">Open Application</option>
+                    <option value="set_reminder">Set Reminder</option>
+                </select>
+            </div>
+            <div>
+                <label for="task-detail" class="block text-sm font-medium text-gray-700 mb-1">Task Detail:</label>
+                <input type="text" id="task-detail" x-model="taskDetail" placeholder="Enter details" required class="w-full px-3 py-2 text-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-50 transition-colors duration-300" :class="{ 'opacity-50 cursor-not-allowed': isLoading }" :disabled="isLoading">
+                <span x-show="!isLoading">Perform Task</span>
+                <span x-show="isLoading" class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                </span>
+            </button>
+        </form>
+        <p id="response" x-show="response" x-text="response" class="mt-4 text-center font-semibold text-gray-800" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-90" x-transition:enter-end="opacity-100 transform scale-100"></p>
+    </div>
+
+    <script>
+        function desktopAssistant() {
+            return {
+                taskType: 'search_web',
+                taskDetail: '',
+                response: '',
+                isLoading: false,
+                async performTask() {
+                    this.isLoading = true;
+                    this.response = '';
+
+                    try {
+                        const response = await fetch('http://127.0.0.1:5000/perform-task', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ task_type: this.taskType, task_detail: this.taskDetail }),
+                        });
+
+                        const result = await response.json();
+                        this.response = result.message;
+                        this.animateResponse();
+                    } catch (error) {
+                        this.response = 'Error: Unable to perform the task';
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                animateResponse() {
+                    gsap.from("#response", {
+                        opacity: 0,
+                        y: -20,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+                }
+            }
+        }
+
+        // Background animation
+        gsap.to("body", {
+            background: "linear-gradient(135deg, #3498db, #8e44ad)",
+            duration: 10,
+            repeat: -1,
+            yoyo: true,
+            ease: "none"
+        });
+    </script>
+</body>
+</html>
